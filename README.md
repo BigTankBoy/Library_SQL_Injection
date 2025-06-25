@@ -1,4 +1,4 @@
-<h1 align="center">📚 Blind SQLi Library CTF 📚</h1>
+<h1 align="center">📚 전자도서관📚</h1>
 
 <div align="center">
 
