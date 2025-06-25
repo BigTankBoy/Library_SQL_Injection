@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Blind SQLi 전자도서관</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>📚 Blind SQLi 전자도서관 📚</h1>
+    <ul>
+        {% for genre in genres %}
+        <li><a href="/genre?genre={{ genre['genre'] }}">{{ genre['genre'] }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <form action="/search" method="get">
+        <input type="text" name="q" placeholder="책 제목 검색">
+        <button>검색하기</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>검색 결과 - {{ query }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>"{{ query }}" 검색 결과</h1>
+    <ul>
+        {% for book in books %}
+        <li><a href="/book/{{ book['id'] }}">{{ book['title'] }}</a></li>
+        {% else %}
+        <li>검색 결과가 없습니다.</li>
+        {% endfor %}
+    </ul>
+    <a href="/">홈으로 돌아가기</a>
+</body>
+</html>
