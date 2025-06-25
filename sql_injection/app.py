@@ -1,8 +1,11 @@
-from flask import Flask, render_template, request, g
+from flask import Flask, render_template, request, redirect, session, g
 import sqlite3
 
 app = Flask(__name__)
-DATABASE = 'blind_library.db'
+app.secret_key = "s3cr3t_key"
+DATABASE = 'blind_library_with_users.db'
+
+# ----------------- DB HANDLING -----------------
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -12,10 +15,44 @@ def get_db():
     return db
 
 @app.teardown_appcontext
-def close_connection(exception):
+def close_conn(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
+
+# ----------------- AUTH -----------------
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        u, p = request.form['username'], request.form['password']
+        db = get_db()
+        try:
+            db.execute("INSERT INTO users(username,password) VALUES (?,?)", (u, p))
+            db.commit()
+            return redirect('/login')
+        except sqlite3.IntegrityError:
+            return "Username already taken", 400
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        u, p = request.form['username'], request.form['password']
+        db = get_db()
+        user = db.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p)).fetchone()
+        if user:
+            session['uid'] = user['id']
+            return redirect('/')
+        return "Invalid", 401
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
+
+# ----------------- LIBRARY -----------------
 
 @app.route('/')
 def index():
@@ -27,28 +64,27 @@ def index():
 def genre():
     genre = request.args.get('genre')
     db = get_db()
-    books = db.execute('SELECT * FROM books WHERE genre = ?', (genre,)).fetchall()
+    books = db.execute('SELECT * FROM books WHERE genre=?', (genre,)).fetchall()
     return render_template('genre.html', genre=genre, books=books)
 
-@app.route('/book/<int:book_id>')
-def book(book_id):
+@app.route('/book/<int:bid>')
+def book(bid):
     db = get_db()
-    book = db.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+    book = db.execute('SELECT * FROM books WHERE id=?', (bid,)).fetchone()
     return render_template('book.html', book=book)
 
 @app.route('/search')
 def search():
-    query = request.args.get('q', '')
+    q = request.args.get('q', '')
     db = get_db()
-
-    sql = f"SELECT * FROM books WHERE title LIKE '%{query}%'"
-    books = []
+    # Intentionally vulnerable SQL
+    sql = f"SELECT id,genre,title,author,content FROM books WHERE title LIKE '%{q}%'"
+    rows = []
     try:
-        books = db.execute(sql).fetchall()
-    except:
+        rows = db.execute(sql).fetchall()
+    except sqlite3.Error:
         pass
-
-    return render_template('search.html', books=books, query=query)
+    return render_template('search.html', rows=rows, q=q)
 
 if __name__ == '__main__':
     app.run(debug=True)
